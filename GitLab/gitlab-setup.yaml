@@ -1,0 +1,9 @@
+---
+- name: Gitlab setup
+  hosts: localhost
+  tasks:
+     - name: Install Nano
+       command: sudo apt-get -y install nano
+  task:
+     - name: SSH Config
+       command: 
