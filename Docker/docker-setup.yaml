@@ -1,20 +1,80 @@
 ---
-- name: Docker and Docker Compose setup
-  hosts: localhost
+- hosts: localhost
+  become: yes
+  gather_facts: false
   tasks:
-     - name: Install Docker
-       command: ssh AB_Finance
-       command: sudo apt-get update
-       command: sudo apt upgrade
-       command: sudo apt remove docker docker-engine docker.io containerd runc
-       command: sudo apt-get install ca-certificates curl gnupg lsb-release
-       command: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-       command: echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - name: Install docker packages
+    remote_user: ubuntu
+    apt:
+      name: "{{ item }}"
+      state: present
+      update_cache: yes
+    with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    tags:
+      - docker
 
-  task:
-     - name: Install Docker Compose
-       command: sudo apt update
-       command: sudo apt install docker-ce docker-ce-cli containerd.io
-       command: sudo usermod -aG docker $USER
-       command: sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-       command: sudo chmod +x /usr/local/bin/docker-compose  
+  - name: Add Docker s official GPG key
+    remote_user: ubuntu
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+    tags:
+      - docker
+
+  - name: Verify that we have the key with the fingerprint
+    remote_user: ubuntu
+    apt_key:
+      id: 0EBFCD88
+      state: present
+    tags:
+      - docker
+
+  - name: Set up the stable repository
+    remote_user: ubuntu
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      state: present
+      update_cache: yes
+    tags:
+      - docker
+
+  - name: Update apt packages
+    remote_user: ubuntu
+    apt:
+      update_cache: yes
+    tags:
+      - docker
+
+  - name: Install docker
+    remote_user: ubuntu
+    apt:
+      name: docker-ce
+      state: present
+      update_cache: yes
+      command: sudo usermod -aG docker $USER
+    #notify: Start docker on boot
+    tags:
+      - docker
+
+  - name: Add remote "ubuntu" user to "docker" group
+    remote_user: ubuntu
+    user:
+      name: "ubuntu"
+      group: "docker"
+      append: yes
+    tags:
+      - docker
+
+  - name: Install docker-compose
+    remote_user: ubuntu
+    get_url:
+      url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
+      dest: /usr/local/bin/docker-compose
+      mode: 'u+x,g+x'
+
+  - name: Ensure docker-compose is installed
+    command: chmod +x /usr/local/bin/docker-compose
