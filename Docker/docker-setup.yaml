@@ -55,8 +55,6 @@
       name: docker-ce
       state: present
       update_cache: yes
-      command: sudo usermod -aG docker $USER
-    #notify: Start docker on boot
     tags:
       - docker
 
@@ -77,4 +75,4 @@
       mode: 'u+x,g+x'
 
   - name: Ensure docker-compose is installed
-    command: chmod +x /usr/local/bin/docker-compose
+    command: chmod +x /usr/local/bin/docker-compose 

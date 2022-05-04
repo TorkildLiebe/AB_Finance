@@ -3,4 +3,4 @@
   hosts: localhost
   tasks:
     - name: Install Gitlab
-      command: docker-compose up -d
+      command: sudo docker-compose up -d
